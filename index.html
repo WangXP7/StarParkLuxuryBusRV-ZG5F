@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>星泊豪华大巴房车 · StarPark Luxury Bus RV</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#efe9df;
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+
+  /* ---------- loading ---------- */
+  #loading { position:fixed; inset:0; background:#efe9df; z-index:50;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:opacity .6s ease; }
+  #loading.hide { opacity:0; pointer-events:none; }
+  #loading .ring { width:54px; height:54px; border-radius:50%;
+    border:3px solid rgba(0,0,0,.08); border-top-color:#8a713d;
+    animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #loading .t1 { margin-top:22px; font-size:19px; letter-spacing:.35em; color:#3c352a; font-weight:600; }
+  #loading .t2 { margin-top:8px; font-size:11px; letter-spacing:.3em; color:#9b8f78; text-transform:uppercase; }
+  #loading .bar { margin-top:20px; width:220px; height:3px; background:rgba(0,0,0,.08); border-radius:2px; overflow:hidden; }
+  #loading .bar i { display:block; height:100%; width:0%; background:#8a713d; transition:width .2s; }
+  #loading .pct { margin-top:8px; font-size:11px; color:#9b8f78; }
+
+  /* ---------- header ---------- */
+  #title { position:fixed; top:22px; left:26px; z-index:10; pointer-events:none;
+    color:#332d23; text-shadow:0 1px 0 rgba(255,255,255,.6); }
+  #title h1 { font-size:20px; letter-spacing:.18em; font-weight:700; }
+  #title p { margin-top:5px; font-size:10.5px; letter-spacing:.28em; color:#8a7d64; text-transform:uppercase; }
+
+  /* ---------- bottom toolbar ---------- */
+  #views { position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    z-index:10; display:flex; gap:6px; padding:7px;
+    background:rgba(255,253,248,.82); backdrop-filter:blur(14px);
+    border-radius:999px; box-shadow:0 8px 30px rgba(60,50,30,.18), inset 0 0 0 1px rgba(0,0,0,.04); }
+  #views button { border:0; background:transparent; cursor:pointer;
+    padding:9px 15px; border-radius:999px; font-size:13px; color:#4a4234;
+    font-family:inherit; letter-spacing:.06em; transition:all .18s; white-space:nowrap; }
+  #views button:hover { background:rgba(0,0,0,.05); }
+  #views button.on { background:#332d23; color:#f3ead8; box-shadow:0 3px 10px rgba(0,0,0,.25); }
+  #views button small { display:block; font-size:8.5px; letter-spacing:.14em; opacity:.55; margin-top:1px; }
+
+  /* ---------- side controls ---------- */
+  #side { position:fixed; right:22px; bottom:24px; z-index:10; display:flex; flex-direction:column; gap:8px; }
+  #side button { width:42px; height:42px; border:0; border-radius:12px; cursor:pointer;
+    background:rgba(255,253,248,.82); backdrop-filter:blur(14px); color:#4a4234;
+    box-shadow:0 4px 14px rgba(60,50,30,.15), inset 0 0 0 1px rgba(0,0,0,.04);
+    font-size:17px; transition:all .18s; }
+  #side button:hover { background:#332d23; color:#f3ead8; }
+  #side button.on { background:#8a713d; color:#fff; }
+
+  #hint { position:fixed; left:26px; bottom:26px; z-index:9; font-size:11px; color:#8a7d64;
+    letter-spacing:.08em; pointer-events:none; text-shadow:0 1px 0 rgba(255,255,255,.6); }
+
+  @media (max-width:640px){
+    #title h1 { font-size:15px; } #title p { font-size:8.5px; }
+    #views { gap:3px; padding:5px; bottom:16px; max-width:94vw; overflow-x:auto; }
+    #views button { padding:8px 10px; font-size:11.5px; }
+    #views button small { display:none; }
+    #side { right:12px; bottom:76px; }
+    #hint { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="loading">
+  <div class="ring"></div>
+  <div class="t1">星泊豪华大巴房车</div>
+  <div class="t2">STARPARK LUXURY BUS RV</div>
+  <div class="bar"><i id="ldbar"></i></div>
+  <div class="pct" id="ldpct">0%</div>
+</div>
+
+<div id="title">
+  <h1>星泊豪华大巴房车</h1>
+  <p>STARPARK LUXURY BUS RV · D-SERIES</p>
+</div>
+
+<div id="views">
+  <button data-v="exterior" class="on">外观环视<small>EXTERIOR</small></button>
+  <button data-v="cockpit">驾驶舱<small>COCKPIT</small></button>
+  <button data-v="lounge">会客厅<small>LOUNGE</small></button>
+  <button data-v="kitchen">厨 卫<small>KITCHEN</small></button>
+  <button data-v="bedroom">卧 室<small>BEDROOM</small></button>
+  <button data-v="garage">车库·跑车<small>GARAGE</small></button>
+</div>
+
+<div id="side">
+  <button id="btnRot" title="自动旋转">⟳</button>
+  <button id="btnFull" title="全屏">⛶</button>
+</div>
+
+<div id="hint">拖动旋转 · 滚轮缩放 · 右键平移 —— 进入车内后可环绕前后左右观看</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const app = document.getElementById('app');
+const ldpct = document.getElementById('ldpct');
+const ldbar = document.getElementById('ldbar');
+
+/* ---------- renderer / scene / camera ---------- */
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xefe9df);
+scene.fog = new THREE.Fog(0xefe9df, 55, 130);
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.05, 300);
+camera.position.set(12.5, 6.5, 10);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.5, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 0.4;
+controls.maxDistance = 45;
+controls.maxPolarAngle = Math.PI * 0.497;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.9;
+
+/* ---------- lights ---------- */
+scene.add(new THREE.HemisphereLight(0xfff2dd, 0xcabfae, 1.0));
+
+const sun = new THREE.DirectionalLight(0xfff0dc, 2.1);
+sun.position.set(13, 17, -8);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -13; sun.shadow.camera.right = 13;
+sun.shadow.camera.top = 13; sun.shadow.camera.bottom = -13;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 60;
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.03;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0xdfe8ff, 0.55);
+fill.position.set(-11, 9, 12);
+scene.add(fill);
+
+/* ---------- load model ---------- */
+const loader = new GLTFLoader();
+loader.load('model/StarParkLuxuryBusRV.glb', (gltf) => {
+  const model = gltf.scene;
+  model.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = !(o.material && o.material.transparent);
+      o.receiveShadow = true;
+      if (o.material && o.material.transparent) {
+        o.material.depthWrite = false;
+        o.renderOrder = 2;
+      }
+    }
+  });
+  scene.add(model);
+  finishLoading();
+  flyTo('exterior', 0);
+},
+(e) => {
+  if (e.lengthComputable) {
+    const p = Math.round(e.loaded / e.total * 100);
+    ldpct.textContent = p + '%';
+    ldbar.style.width = p + '%';
+  }
+},
+(err) => {
+  ldpct.textContent = '模型加载失败，请刷新重试';
+  console.error(err);
+});
+
+function finishLoading(){
+  ldbar.style.width = '100%';
+  ldpct.textContent = '100%';
+  setTimeout(()=> document.getElementById('loading').classList.add('hide'), 250);
+}
+
+/* ---------- preset views ---------- */
+/* presets in three.js Y-up coordinates (converted from Blender Z-up) */
+const VIEWS = {
+  exterior: { cam:[12.5, 6.5, 10],   tgt:[0, 1.5, 0],    rot:true  },
+  cockpit:  { cam:[2.4, 2.35, -0.3], tgt:[4.4, 1.95, -0.4], rot:false },
+  lounge:   { cam:[2.9, 2.3, 0.9],   tgt:[1.2, 1.9, -0.5],  rot:false },
+  kitchen:  { cam:[-0.6, 2.4, 0.7],  tgt:[-2.2, 2.0, -0.8], rot:false },
+  bedroom:  { cam:[-3.8, 2.75, -0.2],tgt:[-5.3, 2.4, -0.2], rot:false },
+  garage:   { cam:[-2.45, 1.8, -0.1],tgt:[-4.5, 1.35, 0.1], rot:false },
+};
+
+let tween = null;
+function flyTo(name, dur = 1.4){
+  const v = VIEWS[name]; if (!v) return;
+  const p0 = camera.position.clone();
+  const t0 = controls.target.clone();
+  const p1 = new THREE.Vector3(...v.cam);
+  const t1 = new THREE.Vector3(...v.tgt);
+  controls.autoRotate = false;
+  tween = { p0, t0, p1, t1, t:0, dur };
+  setActiveBtn(name);
+  btnRot.classList.toggle('on', v.rot);
+}
+function settleAuto(name){
+  controls.autoRotate = VIEWS[name] && VIEWS[name].rot && rotOn;
+}
+
+function stepTween(dt){
+  if (!tween) return;
+  tween.t = Math.min(1, tween.t + dt / tween.dur);
+  const k = tween.t < .5 ? 4*tween.t**3 : 1 - Math.pow(-2*tween.t+2, 3)/2;
+  camera.position.lerpVectors(tween.p0, tween.p1, k);
+  controls.target.lerpVectors(tween.t0, tween.t1, k);
+  if (tween.t >= 1){
+    const name = currentView;
+    tween = null;
+    settleAuto(name);
+  }
+}
+
+/* ---------- ui ---------- */
+let currentView = 'exterior';
+let rotOn = true;
+const btnRot = document.getElementById('btnRot');
+
+document.querySelectorAll('#views button').forEach(b => {
+  b.addEventListener('click', () => {
+    currentView = b.dataset.v;
+    flyTo(currentView);
+  });
+});
+function setActiveBtn(name){
+  document.querySelectorAll('#views button').forEach(b =>
+    b.classList.toggle('on', b.dataset.v === name));
+}
+btnRot.classList.add('on');
+btnRot.addEventListener('click', () => {
+  rotOn = !rotOn;
+  btnRot.classList.toggle('on', rotOn);
+  settleAuto(currentView);
+});
+document.getElementById('btnFull').addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+renderer.domElement.addEventListener('pointerdown', () => { tween = null; });
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt = clock.getDelta();
+  stepTween(dt);
+  controls.update();
+  renderer.render(scene, camera);
+}
+loop();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
